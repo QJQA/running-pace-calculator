@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>跑步配速计算器</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="logo-area">
+        <span class="icon-emoji">🏃</span>
+        <h1>跑步配速计算器</h1>
+      </div>
+      <p class="subtitle">科学规划你的每一次奔跑</p>
+    </header>
+
+    <main class="main-content">
+      <!-- 输入区域 -->
+      <section class="card input-card">
+        <div class="form-grid">
+          
+          <!-- 目标距离 -->
+          <div class="form-group full-width">
+            <label class="form-label">目标距离</label>
+            <div class="input-wrapper combo-wrapper">
+              <input type="number" id="distanceInput" class="form-input" placeholder="输入公里数 (例如 10)" min="3" step="0.01">
+              <span class="unit-text">km</span>
+              
+              <!-- 隐形下拉触发器 -->
+              <select id="distancePreset" class="combo-select">
+                <option value="" disabled selected>快速选择</option>
+                <option value="3">3km - 休闲跑</option>
+                <option value="5">5km - 迷你马</option>
+                <option value="10">10km - 健康跑</option>
+                <option value="21.0975">半程马拉松 (21.0975km)</option>
+                <option value="42.195">全程马拉松 (42.195km)</option>
+              </select>
+              
+              <!-- 下拉箭头图标 -->
+              <div class="combo-arrow">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 9l6 6 6-6"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- 期望时间 -->
+          <div class="form-group full-width">
+            <label class="form-label">期望总用时</label>
+            <div class="time-inputs">
+              <div class="time-field">
+                <input type="number" id="timeHours" class="form-input" placeholder="0" min="0" step="1">
+                <span class="time-label">小时</span>
+              </div>
+              <div class="time-separator">:</div>
+              <div class="time-field">
+                <input type="number" id="timeMinutes" class="form-input" placeholder="00" min="0" max="59" step="1">
+                <span class="time-label">分钟</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="section-title">配速策略设置</div>
+
+          <!-- 渐进设置 -->
+          <div class="form-group">
+            <label class="form-label">渐进刻度 <span class="tooltip-icon" data-tooltip="设定每隔多少公里调整一次配速">?</span></label>
+            <select id="progressiveStep" class="form-select">
+              <option value="1">每 1 公里</option>
+              <option value="2" selected>每 2 公里</option>
+              <option value="3">每 3 公里</option>
+              <option value="4">每 4 公里</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">渐进速度 <span class="tooltip-icon" data-tooltip="每个刻度配速加快的秒数 (前慢后快)">?</span></label>
+            <div class="input-wrapper progressive-wrapper">
+              <input type="number" id="progressiveSec" class="form-input" placeholder="例如: 5" min="0" step="1" value="0">
+              <span class="unit">秒/刻度</span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="action-buttons">
+          <button id="btnReset" class="btn btn-secondary">重置</button>
+          <button id="btnCalc" class="btn btn-primary">生成计划</button>
+        </div>
+        <div id="errorMsg" class="error-message hidden"></div>
+      </section>
+
+      <!-- 结果展示区域 -->
+      <section id="resultSection" class="result-section hidden">
+        <!-- 核心指标卡片 -->
+        <div class="stats-grid">
+          <div class="stat-card primary">
+            <div class="stat-label">平均配速</div>
+            <div class="stat-value" id="resAvgPace">--:--</div>
+            <div class="stat-unit">/km</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">目标用时</div>
+            <div class="stat-value" id="resTargetTime">--:--</div>
+          </div>
+          <div class="stat-card" id="finalTimeCard">
+            <div class="stat-label">预估用时</div>
+            <div class="stat-value" id="resFinalTime">--:--</div>
+          </div>
+        </div>
+
+        <!-- 配速表 -->
+        <div class="card table-card">
+          <div class="card-header">
+            <h3>分段配速规划</h3>
+            <div class="header-actions">
+              <span class="status-tag" id="statusTag">已优化</span>
+            </div>
+          </div>
+          <div class="table-container">
+            <table class="pace-table">
+              <thead>
+                <tr>
+                  <th>分段</th>
+                  <th>距离 (km)</th>
+                  <th>配速 (mm:ss)</th>
+                  <th>用时</th>
+                </tr>
+              </thead>
+              <tbody id="segmentsBody">
+                <!-- JS生成 -->
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer">
+            <p class="hint-text">* 可直接修改配速，点击下方按钮重新计算</p>
+            <button id="btnRecompute" class="btn btn-outline">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6"></path>
+                <path d="M1 20v-6h6"></path>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              基于调整重新计算
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+    
+    <footer class="app-footer">
+      Running Pace Calculator &copy; 2025
+    </footer>
+  </div>
+
+  <div id="tooltipPopup" class="tooltip-popup hidden"></div>
+  <script src="app.js"></script>
+</body>
+</html>
